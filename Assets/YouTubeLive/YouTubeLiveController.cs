@@ -71,7 +71,7 @@ namespace YouTubeLive
                 }
                 pageToken = chat.pageToken;
 
-                await UniTask.Delay(3000);
+                await UniTask.Delay((int)(interval * 1000));
             }
         }
 
