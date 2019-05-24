@@ -104,7 +104,9 @@ namespace YouTubeLive
             var text = await Get(url);
 
             var chat = new Chat();
-
+            
+            // Live Streaming API : Live Chat Messages
+            // https://developers.google.com/youtube/v3/live/docs/liveChatMessages#snippet.superChatDetails.tier
             var json = JSON.Parse(text);
 
             var items = json["items"];
@@ -115,6 +117,11 @@ namespace YouTubeLive
 
                 var snip = item.Value["snippet"];
                 var author = item.Value["authorDetails"];
+                var superChatDetails = snip["superChatDetails"];
+
+                var superChatAmount = superChatDetails["amountMicros"].AsLong;
+                Debug.Log($"Super chat : {superChatAmount}");
+
                 chat.msgs.Add(new Chat.Msg()
                 {
                     text = snip["displayMessage"].RawString(),
