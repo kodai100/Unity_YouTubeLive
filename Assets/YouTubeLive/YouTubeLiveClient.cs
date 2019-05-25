@@ -11,13 +11,29 @@ namespace YouTubeLive
 {
     public class Chat
     {
-        public class Msg
+        [System.Serializable]
+        public class SuperChatDetails
         {
-            public string text;
-            public string name;
-            public string img;
+            public int amount;
+            public string currency;
+            public string comment;
+            public string amountDispStr;
+            public int tier;
         }
-        public List<Msg> msgs = new List<Msg>();
+
+        [System.Serializable]
+        public class Comment
+        {
+            public enum CommentType { Normal, SuperChat }
+
+            public CommentType type;
+            public string name;
+            public Texture img;
+            public string comment;
+            public SuperChatDetails superChatDetails;
+        }
+
+        public List<Comment> msgs = new List<Comment>();
         public string pageToken;
     }
 
@@ -43,10 +59,11 @@ namespace YouTubeLive
     public class YouTubeLiveClient
     {
 
+        ImageLoader imageLoader;
 
         public YouTubeLiveClient()
         {
-
+            imageLoader = new ImageLoader();
         }
 
         public YouTubeLiveAccess access { set; get; }
@@ -113,21 +130,37 @@ namespace YouTubeLive
 
             foreach (var item in items)
             {
-                Debug.Log(item.Value["kind"]);
 
                 var snip = item.Value["snippet"];
                 var author = item.Value["authorDetails"];
                 var superChatDetails = snip["superChatDetails"];
 
-                var superChatAmount = superChatDetails["amountMicros"].AsLong;
-                Debug.Log($"Super chat : {superChatAmount}");
 
-                chat.msgs.Add(new Chat.Msg()
+                var commentType = superChatDetails["amountMicros"].AsLong > 0 ? Chat.Comment.CommentType.SuperChat : Chat.Comment.CommentType.Normal;
+
+                Chat.SuperChatDetails scd = null;
+                if (commentType == Chat.Comment.CommentType.SuperChat)
                 {
-                    text = snip["displayMessage"].RawString(),
+                    scd = new Chat.SuperChatDetails()
+                    {
+                        amount = (int)superChatDetails["amountMicros"].AsLong / 1000000,
+                        currency = superChatDetails["currency"].RawString(),
+                        comment = superChatDetails["userComment"].RawString(),
+                        amountDispStr = superChatDetails["amountDisplayString"].RawString(),
+                        tier = superChatDetails["tier"].AsInt
+                    };
+                }
+
+                var msg = new Chat.Comment()
+                {
+                    type = commentType,
+                    comment = scd != null ? scd.comment : snip["displayMessage"].RawString(),
                     name = author["displayName"].RawString(),
-                    img = author["profileImageUrl"].RawString()
-                });
+                    img = await imageLoader.LoadTextureAsync(author["profileImageUrl"].RawString()),
+                    superChatDetails = scd
+                };
+
+                chat.msgs.Add(msg);
             }
 
             var next = json["nextPageToken"];

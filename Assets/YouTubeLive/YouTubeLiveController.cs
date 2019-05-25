@@ -16,9 +16,7 @@ namespace YouTubeLive
         [SerializeField]
         float interval = 3f;
 
-        public event Action<Chat.Msg> OnMessage;
-
-
+        public event Action<Chat.Comment> OnMessage;
 
         async void Start()
         {

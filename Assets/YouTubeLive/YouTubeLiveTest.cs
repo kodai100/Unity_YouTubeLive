@@ -4,25 +4,12 @@ using UnityEngine;
 
 namespace YouTubeLive
 {
-    public enum CommentType
-    {
-        Normal, SuperChat
-    }
-
-    [System.Serializable]
-    public class Comment
-    {
-        public CommentType type;
-        public Texture icon;
-        public string name; 
-        public string comment;
-    }
 
     [RequireComponent(typeof(YouTubeLiveController))]
     public class YouTubeLiveTest : MonoBehaviour
     {
 
-        public List<Comment> comments = new List<Comment>();
+        public List<Chat.Comment> comments = new List<Chat.Comment>();
 
         ImageLoader loader;
 
@@ -32,13 +19,19 @@ namespace YouTubeLive
 
             var ctrl = GetComponent<YouTubeLiveController>();
 
-            ctrl.OnMessage += async msg => {
+            ctrl.OnMessage += msg => {
 
-                Debug.Log(msg.name + ": " + msg.text);
+                if (msg.superChatDetails != null)
+                {
+                    Debug.Log($"<color=yellow>{msg.name} : {msg.comment} - {msg.superChatDetails.amount}</color>");
+                }
+                else
+                {
+                    Debug.Log($"{msg.name} : {msg.comment}");
+                }
+                
 
-                Texture tex = await loader.LoadTextureAsync(msg.img);
-
-                comments.Add(new Comment() { type = CommentType.Normal, icon = tex, name = msg.name, comment = msg.text });
+                comments.Add(msg);
             };
         }
     }
