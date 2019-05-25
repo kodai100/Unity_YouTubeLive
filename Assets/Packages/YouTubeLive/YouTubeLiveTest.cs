@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using ExchangeRate;
+using System;
 
 namespace YouTubeLive
 {
@@ -11,19 +13,21 @@ namespace YouTubeLive
 
         public List<Chat.Comment> comments = new List<Chat.Comment>();
 
-        ImageLoader loader;
-
         void Start()
         {
-            loader = new ImageLoader();
 
             var ctrl = GetComponent<YouTubeLiveController>();
 
-            ctrl.OnMessage += msg => {
+            ctrl.OnMessage += async msg => {
 
-                if (msg.superChatDetails != null)
+                if (msg.type == CommentType.SuperChat)
                 {
-                    Debug.Log($"<color=yellow>{msg.name} : {msg.comment} - {msg.superChatDetails.amount}</color>");
+
+                    Currency currency = (Currency)Enum.Parse(typeof(Currency), msg.superChatDetails.currency);
+
+                    float yen = await ExchangeRateAPI.Exchange(msg.superChatDetails.amount, currency, Currency.JPY);
+
+                    Debug.Log($"<color=yellow>{msg.name} : {msg.comment} - {yen} [JPY]</color>");
                 }
                 else
                 {
