@@ -23,22 +23,22 @@ namespace YouTubeLive
 
             OnMessage += _ => { };
 
-            var client = new YouTubeLiveClient();
-            client.access = access;
+            var client = new YouTubeLiveClient(access);
 
             // OAuth access, and get authorization code
             if (access.code == "")
             {
                 var server = GetComponent<YouTubeLiveServer>();
-
+                
+                // 認証待ち
                 server.Listen();
                 server.OnReceiveCode += code => {
                     access.code = code;
                 };
 
-                Application.OpenURL(client.AuthUrl());
-
-                // because the server is runnning as subthread)
+                // Webで認証
+                Application.OpenURL(client.AuthUrl);
+                
                 await UniTask.WaitUntil(() => access.code != "");
 
                 server.Stop();

@@ -9,74 +9,29 @@ using UniRx.Async;
 
 namespace YouTubeLive
 {
-    public class Chat
-    {
-        [System.Serializable]
-        public class SuperChatDetails
-        {
-            public int amount;
-            public string currency;
-            public string comment;
-            public string amountDispStr;
-            public int tier;
-        }
-
-        [System.Serializable]
-        public class Comment
-        {
-            public enum CommentType { Normal, SuperChat }
-
-            public CommentType type;
-            public string name;
-            public Texture img;
-            public string comment;
-            public SuperChatDetails superChatDetails;
-        }
-
-        public List<Comment> msgs = new List<Comment>();
-        public string pageToken;
-    }
-
-    [Serializable]
-    public class YouTubeLiveAccess
-    {
-        [Header("YouTube")]
-        public string id = "_video_uri";
-
-        [Header("OAuth")]
-        public string clientId = "_client_id";
-        public string clientSecret = "_client_secret";
-
-        [Header("Options")]
-        public string redirectUri = "http://localhost:8080";
-        public string grantType = "authorization_code";
-        public string accessType = "offline";
-        public string scope = "https://www.googleapis.com/auth/youtube.readonly";
-        public string code = "";
-        public string token = "";
-    }
-
+    
     public class YouTubeLiveClient
     {
 
         ImageLoader imageLoader;
 
-        public YouTubeLiveClient()
-        {
-            imageLoader = new ImageLoader();
-        }
+        public YouTubeLiveAccess access { private set; get; }
 
-        public YouTubeLiveAccess access { set; get; }
-
-        public string AuthUrl()
-        {
-            return "https://accounts.google.com/o/oauth2/v2/auth?response_type=code"
+        // OAuth URL
+        public string AuthUrl => "https://accounts.google.com/o/oauth2/v2/auth?response_type=code"
               + "&client_id=" + access.clientId
               + "&redirect_uri=" + access.redirectUri
               + "&scope=" + access.scope
               + "&access_type=" + access.accessType;
-        }
 
+
+        public YouTubeLiveClient(YouTubeLiveAccess access)
+        {
+
+            this.access = access;
+            this.imageLoader = new ImageLoader();
+        }
+        
         public async UniTask<(string access, string reflesh)> GetToken()
         {
             var url = "https://www.googleapis.com/oauth2/v4/token";
@@ -136,10 +91,10 @@ namespace YouTubeLive
                 var superChatDetails = snip["superChatDetails"];
 
 
-                var commentType = superChatDetails["amountMicros"].AsLong > 0 ? Chat.Comment.CommentType.SuperChat : Chat.Comment.CommentType.Normal;
+                var commentType = superChatDetails["amountMicros"].AsLong > 0 ? CommentType.SuperChat : CommentType.Normal;
 
                 Chat.SuperChatDetails scd = null;
-                if (commentType == Chat.Comment.CommentType.SuperChat)
+                if (commentType == CommentType.SuperChat)
                 {
                     scd = new Chat.SuperChatDetails()
                     {
@@ -154,7 +109,7 @@ namespace YouTubeLive
                 var msg = new Chat.Comment()
                 {
                     type = commentType,
-                    comment = scd != null ? scd.comment : snip["displayMessage"].RawString(),
+                    comment = commentType == CommentType.SuperChat ? scd.comment : snip["displayMessage"].RawString(),
                     name = author["displayName"].RawString(),
                     img = await imageLoader.LoadTextureAsync(author["profileImageUrl"].RawString()),
                     superChatDetails = scd
@@ -169,6 +124,7 @@ namespace YouTubeLive
             return chat;
         }
 
+        #region WebUtility
         async UniTask<string> Get(string uri)
         {
             var content = new Dictionary<string, string>() {
@@ -224,15 +180,6 @@ namespace YouTubeLive
                 return request.downloadHandler.text;
             }
         }
-
-    }
-
-    public static class SimpleJsonUtility
-    {
-        public static string RawString(this JSONNode node)
-        {
-            var len = node.ToString().Length - 2;
-            return node.ToString().Substring(1, len);
-        }
+        #endregion
     }
 }
