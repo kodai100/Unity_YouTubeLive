@@ -15,7 +15,7 @@ public class ImageLoader
     
     public async UniTask<Texture> LoadTextureAsync(string url)
     {
-        Debug.Log($"<color=yellow>Load start : {url}</color>");
+        // Debug.Log($"<color=yellow>Load start : {url}</color>");
 
         var request = UnityWebRequestTexture.GetTexture($"{url}");
         await request.SendWebRequest();
