@@ -6,89 +6,81 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System;
 using UnityEngine;
+using UniRx.Async;
 
 namespace YouTubeLive
 {
     // Main Thread Dispatcher
-    public class YouTubeLiveServer : MonoBehaviour
+    public class YouTubeLiveServer : IDisposable
     {
         HttpListener listener;
         bool isRunning;
 
-        Queue<string> queue = new Queue<string>();
+        event Action<string> OnReceiveCode;
 
-        public event Action<string> OnReceiveCode;
-
-        public void Listen()
+        public YouTubeLiveServer(Action<string> OnReceiveCode)
         {
-            ThreadStart start = () => {
-                try
+            this.OnReceiveCode = OnReceiveCode;
+        }
+
+        public async UniTask Start()
+        {
+            try
+            {
+                listener = new HttpListener();
+                listener.Prefixes.Add("http://*:8080/");
+                listener.Start();
+
+                isRunning = true;
+
+                while (isRunning)
                 {
-                    listener = new HttpListener();
-                    listener.Prefixes.Add("http://*:8080/");
-                    listener.Start();
+                    var context = await listener.GetContextAsync();
 
-                    isRunning = true;
-                    while (isRunning)
+                    var req = context.Request;
+                    var res = context.Response;
+
+                    var code = ExtractCode(req.RawUrl);
+                    if (code != "")
                     {
-                        var context = listener.GetContext();
-                        var req = context.Request;
-                        var res = context.Response;
+                        OnReceiveCode(code);
 
-                        var code = ExtractCode(req.RawUrl);
-                        if (code != "")
-                        {
-                            queue.Enqueue(code);
-                        }
-
-                        var content = Encoding.UTF8.GetBytes(req.RawUrl);
+                        var content = Encoding.UTF8.GetBytes($"<h1>Response code: </h1><br>{code}");
                         res.StatusCode = 200;
                         res.OutputStream.Write(content, 0, content.Length);
                         res.Close();
+
+                        Stop();
                     }
                 }
-                catch (Exception e)
-                {
-                    Debug.LogError(e);
-                }
-            };
-
-            var thread = new Thread(start);
-            thread.Start();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
         }
 
         public void Stop()
         {
             if (isRunning)
             {
-                listener.Close();
                 isRunning = false;
+
+                listener.Stop();
+                listener.Close();
             }
         }
 
-        void Update()
-        {
-            if (queue.Count > 0)
-            {
-                var item = queue.Dequeue();
-
-                if (OnReceiveCode != null)
-                {
-                    OnReceiveCode(item);
-                }
-            }
-        }
-
-        void OnDestory()
-        {
-            Stop();
-        }
-
+        // Extract OAuth code from requested url
         public static string ExtractCode(string rawUrl)
         {
             var re = new Regex(@"/\?code=(?<c>.*)");
             return re.Match(rawUrl).Groups["c"].ToString();
         }
 
+        public void Dispose()
+        {
+            Stop();
+        }
     }
 }

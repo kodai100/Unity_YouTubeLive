@@ -27,7 +27,7 @@ namespace YouTubeLive
 
                     float yen = await ExchangeRateAPI.Exchange(msg.superChatDetails.amount, currency, Currency.JPY);
 
-                    Debug.Log($"<color=yellow>{msg.name} : {msg.comment} - {yen} [JPY]</color>");
+                    Debug.Log($"<color=yellow>{msg.name} : {msg.comment} - {yen} [JPY] <- {msg.superChatDetails.amount} [{currency.ToString()}]</color>");
                 }
                 else
                 {

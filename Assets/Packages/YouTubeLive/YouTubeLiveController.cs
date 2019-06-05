@@ -6,7 +6,6 @@ using UniRx.Async;
 
 namespace YouTubeLive
 {
-    [RequireComponent(typeof(YouTubeLiveServer))]
     public class YouTubeLiveController : MonoBehaviour
     {
 
@@ -16,6 +15,7 @@ namespace YouTubeLive
         [SerializeField]
         float interval = 3f;
 
+
         public event Action<Chat.Comment> OnMessage;
 
         async void Start()
@@ -24,24 +24,16 @@ namespace YouTubeLive
             OnMessage += _ => { };
 
             var client = new YouTubeLiveClient(access);
+            var server = new YouTubeLiveServer(code => { access.code = code; });
 
             // OAuth access, and get authorization code
             if (access.code == "")
             {
-                var server = GetComponent<YouTubeLiveServer>();
-                
-                // 認証待ち
-                server.Listen();
-                server.OnReceiveCode += code => {
-                    access.code = code;
-                };
-
-                // Webで認証
+                server.Start();
                 Application.OpenURL(client.AuthUrl);
-                
                 await UniTask.WaitUntil(() => access.code != "");
 
-                server.Stop();
+                server.Dispose();
             }
 
             // get access token
@@ -72,6 +64,7 @@ namespace YouTubeLive
                 await UniTask.Delay((int)(interval * 1000));
             }
         }
+        
 
     }
 
