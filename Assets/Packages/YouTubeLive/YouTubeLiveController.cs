@@ -24,16 +24,16 @@ namespace YouTubeLive
             OnMessage += _ => { };
 
             var client = new YouTubeLiveClient(access);
-            var server = new YouTubeLiveServer(code => { access.code = code; });
 
-            // OAuth access, and get authorization code
-            if (access.code == "")
+            using (var server = new YouTubeLiveServer(code => { access.code = code; }))
             {
-                server.Start();
-                Application.OpenURL(client.AuthUrl);
-                await UniTask.WaitUntil(() => access.code != "");
-
-                server.Dispose();
+                // OAuth access, and get authorization code
+                if (access.code == "")
+                {
+                    server.Start();
+                    Application.OpenURL(client.AuthUrl);
+                    await UniTask.WaitUntil(() => access.code != "");
+                }
             }
 
             // get access token
