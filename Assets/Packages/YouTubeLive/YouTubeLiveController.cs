@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System;
 using UnityEngine;
 using UniRx.Async;
+using UnityEngine.Events;
 
 namespace YouTubeLive
 {
+    [System.Serializable]
+    public class OnMessageEvent : UnityEvent<Chat.Comment> { }
+
     public class YouTubeLiveController : MonoBehaviour
     {
 
@@ -14,14 +18,11 @@ namespace YouTubeLive
 
         [SerializeField]
         float interval = 3f;
-
-
-        public event Action<Chat.Comment> OnMessage;
+        
+        public OnMessageEvent OnMessage;
 
         async void Start()
         {
-
-            OnMessage += _ => { };
 
             var client = new YouTubeLiveClient(access);
 
@@ -57,7 +58,7 @@ namespace YouTubeLive
 
                 foreach (var msg in chat.msgs)
                 {
-                    OnMessage(msg);
+                    OnMessage.Invoke(msg);
                 }
                 pageToken = chat.pageToken;
 

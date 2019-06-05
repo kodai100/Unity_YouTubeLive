@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ExchangeRate;
 using System;
+using UniRx.Async;
 
 namespace YouTubeLive
 {
@@ -16,27 +17,26 @@ namespace YouTubeLive
         void Start()
         {
 
-            var ctrl = GetComponent<YouTubeLiveController>();
+        }
 
-            ctrl.OnMessage += async msg => {
+        public async void OnMessage(Chat.Comment msg)
+        {
+            if (msg.type == CommentType.SuperChat)
+            {
 
-                if (msg.type == CommentType.SuperChat)
-                {
+                Currency currency = (Currency)Enum.Parse(typeof(Currency), msg.superChatDetails.currency);
 
-                    Currency currency = (Currency)Enum.Parse(typeof(Currency), msg.superChatDetails.currency);
+                float yen = await ExchangeRateAPI.Exchange(msg.superChatDetails.amount, currency, Currency.JPY);
 
-                    float yen = await ExchangeRateAPI.Exchange(msg.superChatDetails.amount, currency, Currency.JPY);
+                Debug.Log($"<color=yellow>{msg.name} : {msg.comment} - {yen} [JPY] <- {msg.superChatDetails.amount} [{currency.ToString()}]</color>");
+            }
+            else
+            {
+                Debug.Log($"{msg.name} : {msg.comment}");
+            }
 
-                    Debug.Log($"<color=yellow>{msg.name} : {msg.comment} - {yen} [JPY] <- {msg.superChatDetails.amount} [{currency.ToString()}]</color>");
-                }
-                else
-                {
-                    Debug.Log($"{msg.name} : {msg.comment}");
-                }
-                
 
-                comments.Add(msg);
-            };
+            comments.Add(msg);
         }
     }
 }
