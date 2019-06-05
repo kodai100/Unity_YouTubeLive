@@ -13,10 +13,9 @@ namespace YouTubeLive
     public class YouTubeLiveController : MonoBehaviour
     {
 
-        [SerializeField]
-        YouTubeLiveAccess access;
+        [SerializeField] YouTubeLiveAccess access;
 
-        [SerializeField]
+        [Header("Other Settings"), SerializeField]
         float interval = 3f;
         
         public OnMessageEvent OnMessage;
